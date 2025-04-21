@@ -76,6 +76,17 @@ class iAlarmMk2Coordinator(DataUpdateCoordinator):
                     }
                     SENSOR_CONFIG.append(sensor)
 
+            for index in range(91, 98):
+                if int(zones[index].get("Type", 0)) > 0:
+                    sensor = {
+                        "index": index,
+                        "unique_id": "Wired_" + str(index + 1),
+                        "entity_id": f"binary_sensor.{DOMAIN}_{zones[index].get("Name", "no name")}",
+                        "name": zones[index].get("Name", "no name"),
+                        "zone_type": int(zones[index].get("Type", 0)),
+                    }
+                    SENSOR_CONFIG.append(sensor)
+
         except Exception:
                 _LOGGER.exception("Error in setup entities.")
                 self.hub.ialarmmk.ialarmmkClient.logout()
@@ -209,6 +220,11 @@ class iAlarmMk2Coordinator(DataUpdateCoordinator):
                 state: int = status[int(sensor.index)]
 
                 log_message += f"{sensor.name}: state "
+
+                if state is None:
+                    sensor.set_attr_is_on(None)
+                    sensor.set_state(STATE_UNAVAILABLE)
+                    continue
 
                 # Verifica se la zona è in uso e in errore
                 if state & self.hub.ialarmmk.ZONE_IN_USE and state & self.hub.ialarmmk.ZONE_FAULT:
